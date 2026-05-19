@@ -154,6 +154,7 @@ function App() {
                     className="form-control bg-dark text-light border-secondary"
                     placeholder="Type your message..."
                     value={message}
+                    ref={inputRef}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
