@@ -5,12 +5,17 @@ const cors = require('cors')
 const { Server} = require('socket.io')
 
 const connection = require('./config/db')
+const authRoutes = require('./routes/authRoutes')
 
 
 let app = express()
+
+app.use(cors());
+app.use(express.json())
+
 //connect with db
 connection()
-app.use(cors());
+
 //make the server 
 const server = http.createServer(app)
 //establish io 
@@ -39,6 +44,8 @@ io.on ('connection',(socket)=>{
 app.get("/",(req,res)=>{
     res.send("service is live"); 
 })
+
+app.use('/api/auth',authRoutes)
 
 let PORT = process.env.PORT || 5000
 
