@@ -7,8 +7,10 @@ const socket = io("http://localhost:5000")
 function App() {
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([])
-  const inputRef = useRef(null)
-  const messageEndRef = useRef(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const inputRef = useRef(null)//for focus on input 
+  const messageEndRef = useRef(null) //for message end 
+  const chatContainerRef = useRef(null) //for whole message container ref
 
   // receive message  logic
   useEffect(() => {
@@ -60,6 +62,25 @@ function App() {
       })
     }, 100)
   }
+  const handleScroll = () => {
+    const chatBox = chatContainerRef.current//full messages container DOM element.
+
+    if (!chatBox) return
+
+    const totalHeight = chatBox.scrollHeight
+    const scrolledHeight = chatBox.scrollTop
+    const visibleHeight = chatBox.clientHeight
+
+    const isBottom =
+      totalHeight - scrolledHeight <= visibleHeight + 50 //2000-1400 <= 550 +50   // 600 <= 600 
+
+    setShowScrollButton(!isBottom)
+  }
+  const scrollToBottom = () => {
+    messageEndRef.current?.scrollIntoView({
+      behavior: "smooth"
+    })
+  }
 
   return (
     <>
@@ -72,7 +93,11 @@ function App() {
             </div>
 
             {/* message area */}
-            <div className="flex-grow-1 overflow-auto p-3 chat-messages">
+            <div
+              ref={chatContainerRef}
+              onScroll={handleScroll}
+              className="flex-grow-1 overflow-auto p-3 chat-messages"
+            >
               <div className="d-flex flex-column gap-3">
                 {messages.map((msg, index) => (
                   <div
@@ -101,6 +126,21 @@ function App() {
 
                 <div ref={messageEndRef}></div>
               </div>
+              {showScrollButton && (
+                <button
+                  className="btn btn-primary rounded-circle position-absolute"
+                  onClick={scrollToBottom}
+                  style={{
+                    bottom: "100px",
+                    right: "20px",
+                    width: "50px",
+                    height: "50px",
+                    zIndex: 1000
+                  }}
+                >
+                  ↓
+                </button>
+              )}
             </div>
 
 
