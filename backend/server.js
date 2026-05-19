@@ -1,10 +1,15 @@
+require('dotenv').config()
 const http = require('http')
 const express = require('express')
 const cors = require('cors')
 const { Server} = require('socket.io')
 
+const connection = require('./config/db')
+
 
 let app = express()
+//connect with db
+connection()
 app.use(cors());
 //make the server 
 const server = http.createServer(app)
