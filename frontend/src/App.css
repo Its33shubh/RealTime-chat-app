@@ -1,0 +1,14 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.app-wrapper {
+  height: 100vh;
+}
+
+.chat-messages {
+  min-height: 0;
+}
