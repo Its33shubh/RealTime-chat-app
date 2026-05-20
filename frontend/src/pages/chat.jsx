@@ -12,6 +12,7 @@ function Chat() {
   const [users, setUsers] = useState([])
   const [showScrollButton, setShowScrollButton] = useState(false)
   const loggedInUser = JSON.parse(localStorage.getItem("user"))
+  const [selectedUser, setSelectedUser] = useState(null)
 
   const inputRef = useRef(null)//for focus on input 
   const messageEndRef = useRef(null) //for message end 
@@ -24,10 +25,10 @@ function Chat() {
       setMessages((prev) => [
         ...prev,
         {
-          text: data,
+          text: data.text,
           sender: "other",
-          name: "Other",
-          time: new Date().toLocaleTimeString()
+          name: data.senderName,
+          time: data.time
         }
       ])
 
@@ -59,9 +60,15 @@ function Chat() {
     fetchUsers()
   }, [])
 
+  useEffect(() => {
+    if (loggedInUser?.id) {
+      socket.emit("register_user", loggedInUser.id)
+    }
+  }, [])
+
   // send message 
   const sendMessage = () => {
-    if (message.trim() === "") return
+    if (message.trim() === "" || !selectedUser) return
 
     setMessages((prev) => [
       ...prev,
@@ -73,7 +80,13 @@ function Chat() {
       }
     ])
 
-    socket.emit("send_message", message)
+    socket.emit("send_message", {
+      text: message,
+      senderId: loggedInUser.id,
+      receiverId: selectedUser._id,
+      senderName: loggedInUser.username,
+      time: new Date().toLocaleTimeString()
+    })
 
     setMessage("")
     inputRef.current.focus()
@@ -112,179 +125,160 @@ function Chat() {
 
   return (
     <>
-      <div className="container-fluid bg-dark text-light p-0 app-wrapper">
-        <div className="row h-100 m-0">
-          <div className="col-12 d-flex flex-column p-0 h-100">
+      <div className="container-fluid bg-dark text-light p-0 vh-100 d-flex flex-column overflow-hidden">
 
-            <div className="bg-black py-3 px-3 border-bottom border-secondary flex-shrink-0">
-              <div className="d-flex justify-content-between align-items-center">
+        {/* Navbar (Header) */}
+        <div className="bg-black py-3 px-3 border-bottom border-secondary flex-shrink-0">
+          <div className="d-flex justify-content-between align-items-center">
+            <h2 className="mb-0 fw-bold fs-4 fs-md-3 text-light">
+              Real Time Chat App
+            </h2>
+            <button
+              className="btn btn-sm fw-semibold"
+              onClick={handleLogout}
+              onMouseEnter={(e) => (e.target.style.backgroundColor = "#3BB8B8")}
+              onMouseLeave={(e) => (e.target.style.backgroundColor = "#50D0D0")}
+              style={{
+                backgroundColor: "#50D0D0",
+                color: "#000",
+                border: "none",
+                transition: "0.3s ease",
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </div>
 
-                <h2 className='mb-0 fw-bold fs-4 fs-md-3 text-light'>
-                  Real Time Chat App
-                </h2>
+        {/* Main Content Area */}
+        <div className="d-flex flex-grow-1 overflow-hidden">
 
-                <button
-                  className="btn btn-sm fw-semibold"
-                  onClick={handleLogout}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = "#3BB8B8"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = "#50D0D0"
-                  }}
-                  style={{
-                    backgroundColor: "#50D0D0",
-                    color: "#000",
-                    border: "none",
-                    transition: "0.3s ease"
-                  }}
-                >
-                  Logout
-                </button>
+          {/* 2. Sidebar: Added d-flex flex-column so the inner list scrolls properly */}
+          <div
+            className="bg-black border-end border-secondary d-flex flex-column flex-shrink-0"
+            style={{ width: "300px" }}
+          >
+            <h5 className="p-3 mb-0 text-light border-bottom border-secondary flex-shrink-0">
+              Registered Users
+            </h5>
 
+            <div className="overflow-auto flex-grow-1">
+              {/* logged in user */}
+              <div
+                className="p-3 border-bottom border-secondary"
+                style={{ backgroundColor: "#1f1f1f" }}
+              >
+                <div className="fw-bold text-info">
+                  {loggedInUser.username} (Me)
+                </div>
+                <small className="text-secondary">{loggedInUser.email}</small>
               </div>
+
+              {/* other users */}
+              {users
+                .filter((user) => user._id !== loggedInUser.id)
+                .map((user) => (
+                  <div
+                    key={user._id}
+                    onClick={() => setSelectedUser(user)}
+                    className="p-3 border-bottom border-secondary"
+                    style={{
+                      cursor: "pointer",
+                      backgroundColor: selectedUser?._id === user._id ? "#2a2a2a" : "transparent",
+                    }}
+                  >
+                    <div className="fw-semibold text-light">{user.username}</div>
+                    <small className="text-secondary">{user.email}</small>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* Right Chat Panel */}
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+
+            {/* Selected user chat header */}
+            <div className="bg-black px-3 py-3 border-bottom border-secondary flex-shrink-0">
+              {selectedUser ? (
+                <>
+                  <div className="fw-bold text-light fs-5">
+                    {selectedUser.username}
+                  </div>
+                  <small className="text-secondary">{selectedUser.email}</small>
+                </>
+              ) : (
+                <div className="text-secondary">Select a user to start chatting</div>
+              )}
             </div>
 
-
-            <div className="flex-grow-1 d-flex overflow-hidden">
-
-              {/* sidebar */}
-              <div
-                className="bg-black border-end border-secondary"
-                style={{ width: "300px" }}
-              >
-                <h5 className="p-3 mb-0 text-light border-bottom border-secondary">
-                  Registered Users
-                </h5>
-
-                <div className="overflow-auto" style={{ height: "100%" }}>
-
-                  {/* logged in user */}
+            {/* Messages */}
+            <div
+              ref={chatContainerRef}
+              onScroll={handleScroll}
+              className="flex-grow-1 overflow-auto p-3 chat-messages"
+            >
+              <div className="d-flex flex-column gap-3">
+                {messages.map((msg, index) => (
                   <div
-                    className="p-3 border-bottom border-secondary"
-                    style={{ backgroundColor: "#1f1f1f" }}
+                    key={index}
+                    className={`d-flex ${msg.sender === "me" ? "justify-content-end" : "justify-content-start"
+                      }`}
                   >
-                    <div className="fw-bold text-info">
-                      {loggedInUser.username} (Me)
-                    </div>
-
-                    <small className="text-secondary">
-                      {loggedInUser.email}
-                    </small>
-                  </div>
-
-                  {/* other users */}
-                  {users
-                    .filter((user) => user._id !== loggedInUser.id)
-                    .map((user) => (
-                      <div
-                        key={user._id}
-                        className="p-3 border-bottom border-secondary"
-                        style={{ cursor: "pointer" }}
-                      >
-                        <div className="fw-semibold text-light">
-                          {user.username}
-                        </div>
-
-                        <small className="text-secondary">
-                          {user.email}
-                        </small>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* right chat panel */}
-              <div className="flex-grow-1 d-flex flex-column position-relative">
-
-                {/* messages */}
-                <div
-                  ref={chatContainerRef}
-                  onScroll={handleScroll}
-                  className="flex-grow-1 overflow-auto p-3 chat-messages"
-                >
-                  <div className="d-flex flex-column gap-3">
-                    {messages.map((msg, index) => (
-                      <div
-                        key={index}
-                        className={`d-flex ${msg.sender === "me"
-                          ? "justify-content-end"
-                          : "justify-content-start"
-                          }`}
-                      >
-                        <div
-                          className={`px-3 py-2 rounded-3 shadow-sm ${msg.sender === "me"
-                            ? "bg-primary text-white"
-                            : "bg-secondary text-white"
-                            }`}
-                        >
-                          <div>{msg.text}</div>
-
-                          <small className="d-block mt-1 opacity-75">
-                            {msg.name} • {msg.time}
-                          </small>
-                        </div>
-                      </div>
-                    ))}
-
-                    <div ref={messageEndRef}></div>
-                  </div>
-
-                  {showScrollButton && (
-                    <button
-                      className="btn btn-primary rounded-circle position-absolute"
-                      onClick={scrollToBottom}
-                      style={{
-                        bottom: "90px",
-                        right: "20px",
-                        width: "50px",
-                        height: "50px",
-                        zIndex: 1000
-                      }}
+                    <div
+                      className={`px-3 py-2 rounded-3 shadow-sm ${msg.sender === "me" ? "bg-primary text-white" : "bg-secondary text-white"
+                        }`}
                     >
-                      ↓
-                    </button>
-                  )}
-                </div>
-
-                {/* input INSIDE right panel */}
-                <div className="bg-black p-3 border-top border-secondary">
-                  <div className="row g-2 align-items-center">
-
-                    <div className="col-9">
-                      <input
-                        type="text"
-                        className="form-control bg-dark text-light border-secondary"
-                        placeholder="Type your message..."
-                        value={message}
-                        ref={inputRef}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            sendMessage()
-                          }
-                        }}
-                      />
+                      <div>{msg.text}</div>
+                      <small className="d-block mt-1 opacity-75">
+                        {msg.name} • {msg.time}
+                      </small>
                     </div>
-
-                    <div className="col-3">
-                      <button
-                        className="btn btn-primary w-100 fw-semibold"
-                        onClick={sendMessage}
-                      >
-                        Send
-                      </button>
-                    </div>
-
                   </div>
-                </div>
-
+                ))}
+                <div ref={messageEndRef}></div>
               </div>
 
+              {showScrollButton && (
+                <button
+                  className="btn btn-primary rounded-circle position-absolute shadow"
+                  onClick={scrollToBottom}
+                  style={{
+                    bottom: "90px",
+                    right: "20px",
+                    width: "50px",
+                    height: "50px",
+                    zIndex: 1000,
+                  }}
+                >
+                  ↓
+                </button>
+              )}
+            </div>
+
+            {/* 3. Input Panel: Added flex-shrink-0 and replaced grid with flexbox */}
+            <div className="bg-black p-3 border-top border-secondary flex-shrink-0">
+              <div className="d-flex gap-2 align-items-center">
+                <input
+                  type="text"
+                  className="form-control bg-dark text-light border-secondary flex-grow-1"
+                  placeholder="Type your message..."
+                  value={message}
+                  ref={inputRef}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") sendMessage();
+                  }}
+                />
+                <button
+                  className="btn btn-primary fw-semibold px-4 flex-shrink-0"
+                  onClick={sendMessage}
+                >
+                  Send
+                </button>
+              </div>
             </div>
 
           </div>
-
         </div>
       </div>
     </>

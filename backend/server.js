@@ -26,13 +26,21 @@ const io = new Server(server,{
 })
 
 // socket.io servers
-
+const users = {}
 io.on ('connection',(socket)=>{
     console.log("A new user connected :",socket.id);
+    socket.on("register_user", (userId) => {
+        users[userId] = socket.id
+        console.log(users)
+    })
 
-    socket.on("send_message", (message) => {
-        socket.broadcast.emit("receive_message", message)
-    });
+    socket.on("send_message", (data) => {
+        const receiverSocketId = users[data.receiverId]
+    
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("receive_message", data)
+        }
+    })
 
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
