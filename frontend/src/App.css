@@ -12,3 +12,16 @@ body,
 .chat-messages {
   min-height: 0;
 }
+.profile-popup {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.profile-avatar:hover .profile-popup {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
