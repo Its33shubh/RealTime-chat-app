@@ -138,7 +138,25 @@ const loginUser = async (req,res) => {
 
 }
 
+const getAllUser = async(req,res)=>{
+    try {
+        const users = await User.find({},'-password')
+        return res.status(200).json({
+            error: false,
+            success: true,
+            users
+        })
+    } catch (error) {
+        return res.status(500).json({
+            error: true,
+            success: false,
+            message: error.message
+        })
+    }
+}
+
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    getAllUser
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import '../App.css'
 import { io } from 'socket.io-client'
 
@@ -11,6 +12,7 @@ function Chat() {
   const inputRef = useRef(null)//for focus on input 
   const messageEndRef = useRef(null) //for message end 
   const chatContainerRef = useRef(null) //for whole message container ref
+  const navigate = useNavigate()
 
   // receive message  logic
   useEffect(() => {
@@ -81,6 +83,12 @@ function Chat() {
       behavior: "smooth"
     })
   }
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+
+    navigate("/", { replace: true })
+  }
 
   return (
     <>
@@ -88,8 +96,33 @@ function Chat() {
         <div className="row h-100 m-0">
           <div className="col-12 d-flex flex-column p-0 h-100">
 
-            <div className="bg-black py-3 border-bottom border-secondary flex-shrink-0">
-              <h2 className='text-center mb-0 fw-bold fs-4 fs-md-3'> Real Time Chat App</h2>
+            <div className="bg-black py-3 px-3 border-bottom border-secondary flex-shrink-0">
+              <div className="d-flex justify-content-between align-items-center">
+
+                <h2 className='mb-0 fw-bold fs-4 fs-md-3 text-light'>
+                  Real Time Chat App
+                </h2>
+
+                <button
+                  className="btn btn-sm fw-semibold"
+                  onClick={handleLogout}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = "#3BB8B8"
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = "#50D0D0"
+                  }}
+                  style={{
+                    backgroundColor: "#50D0D0",
+                    color: "#000",
+                    border: "none",
+                    transition: "0.3s ease"
+                  }}
+                >
+                  Logout
+                </button>
+
+              </div>
             </div>
 
             {/* message area */}
