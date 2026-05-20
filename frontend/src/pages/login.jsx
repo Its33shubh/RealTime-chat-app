@@ -1,7 +1,49 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState,useEffect  } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import toast from 'react-hot-toast'
+
 
 function Login() {
+    const navigate = useNavigate()
+    const [formData,setFormData]= useState({
+        email:'',
+        password: ''
+    })
+    useEffect(() => {
+        let token = localStorage.getItem("token")
+    
+        if (token) {
+            navigate("/chat", { replace: true })
+        }
+    }, [])
+
+    const handleChange =(e)=>{
+        setFormData({
+            ...formData,
+            [e.target.name]:e.target.value
+        })
+    }
+    const handleSubmit=async(e)=>{
+        e.preventDefault()
+        //console.log("formdata",formData);
+        try {
+            const response = await axios.post("http://localhost:5000/api/auth/login",formData)
+            toast.success(response.data.message)
+
+            //save user data
+            localStorage.setItem("token", response.data.token)
+            localStorage.setItem("user", JSON.stringify(response.data.user))
+
+            setTimeout(() => {
+                navigate("/chat")
+            }, 1500)
+    
+        } catch (error) {
+            toast.error(error.response.data.message)
+        }
+        
+    }
     return (
         <>
             <div className="container-fluid vh-100 bg-dark text-light">
@@ -9,6 +51,7 @@ function Login() {
                     <div className="col-11 col-sm-8 col-md-6 col-lg-4">
                         <div className="card bg-black border border-secondary shadow-lg">
                             <div className="card-body p-4">
+                                <form onSubmit={handleSubmit}>
                                 <h2 className="text-center fw-bold mb-4" style={{color: "#F3C587" }}>
                                     Real Time Chat App
                                 </h2>
@@ -25,6 +68,9 @@ function Login() {
                                         type="email"
                                         className="form-control bg-dark text-light border-secondary"
                                         placeholder="Enter your email"
+                                        name='email'
+                                        value={formData.email}
+                                        onChange={handleChange}
                                     />
                                 </div>
 
@@ -36,10 +82,13 @@ function Login() {
                                         type="password"
                                         className="form-control bg-dark text-light border-secondary"
                                         placeholder="Enter your password"
+                                        name='password'
+                                        value={formData.password}
+                                        onChange={handleChange}
                                     />
                                 </div>
 
-                                <button className="btn btn-primary w-100 fw-semibold">
+                                <button type='submit' className="btn btn-primary w-100 fw-semibold">
                                     Login
                                 </button>
 
@@ -53,6 +102,7 @@ function Login() {
                                     </Link>
                                 </p>
 
+                                </form>
                             </div>
                         </div>
 
