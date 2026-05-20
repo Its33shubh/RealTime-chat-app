@@ -33,5 +33,36 @@ const saveMessage = async (req, res) => {
         })
     }
 }
+const getConversation = async (req, res) => {
+    try {
+        const { senderId, receiverId } = req.params
 
-module.exports = { saveMessage }
+        const messages = await Message.find({
+            $or: [
+                {
+                    senderId: senderId,
+                    receiverId: receiverId
+                },
+                {
+                    senderId: receiverId,
+                    receiverId: senderId
+                }
+            ]
+        }).sort({ createdAt: 1 })
+
+        return res.status(200).json({
+            error: false,
+            success: true,
+            messages
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            error: true,
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+module.exports = { saveMessage,getConversation }

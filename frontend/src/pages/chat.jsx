@@ -4,6 +4,7 @@ import '../App.css'
 import { io } from 'socket.io-client'
 import axios from 'axios'
 
+
 const socket = io("http://localhost:5000")
 
 function Chat() {
@@ -138,6 +139,29 @@ function Chat() {
 
     navigate("/", { replace: true })
   }
+  const handleSelectUser = async (user) => {
+    setSelectedUser(user)
+  
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/message/conversation/${loggedInUser.id}/${user._id}`
+      )
+  
+      //console.log(response.data)
+  
+      const formattedMessages = response.data.messages.map((msg) => ({
+        text: msg.text,
+        sender: msg.senderId === loggedInUser.id ? "me" : "other",
+        name: msg.senderId === loggedInUser.id ? "Me" : user.username,
+        time: new Date(msg.createdAt).toLocaleTimeString()
+      }))
+  
+      setMessages(formattedMessages)
+  
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   return (
     <>
@@ -196,7 +220,7 @@ function Chat() {
                 .map((user) => (
                   <div
                     key={user._id}
-                    onClick={() => setSelectedUser(user)}
+                    onClick={() => handleSelectUser(user)}
                     className="p-3 border-bottom border-secondary"
                     style={{
                       cursor: "pointer",
