@@ -2,13 +2,17 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../App.css'
 import { io } from 'socket.io-client'
+import axios from 'axios'
 
 const socket = io("http://localhost:5000")
 
 function Chat() {
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([])
+  const [users, setUsers] = useState([])
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const loggedInUser = JSON.parse(localStorage.getItem("user"))
+
   const inputRef = useRef(null)//for focus on input 
   const messageEndRef = useRef(null) //for message end 
   const chatContainerRef = useRef(null) //for whole message container ref
@@ -37,6 +41,22 @@ function Chat() {
     return () => {
       socket.off("receive_message")
     }
+  }, [])
+
+  //get all user
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        let response = await axios.get("http://localhost:5000/api/auth/users")
+
+        setUsers(response.data.users)
+        console.log(response.data.users);
+
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    fetchUsers()
   }, [])
 
   // send message 
@@ -125,85 +145,142 @@ function Chat() {
               </div>
             </div>
 
-            {/* message area */}
-            <div
-              ref={chatContainerRef}
-              onScroll={handleScroll}
-              className="flex-grow-1 overflow-auto p-3 chat-messages"
-            >
-              <div className="d-flex flex-column gap-3">
-                {messages.map((msg, index) => (
+
+            <div className="flex-grow-1 d-flex overflow-hidden">
+
+              {/* sidebar */}
+              <div
+                className="bg-black border-end border-secondary"
+                style={{ width: "300px" }}
+              >
+                <h5 className="p-3 mb-0 text-light border-bottom border-secondary">
+                  Registered Users
+                </h5>
+
+                <div className="overflow-auto" style={{ height: "100%" }}>
+
+                  {/* logged in user */}
                   <div
-                    key={index}
-                    className={`d-flex
-                       ${msg.sender === "me"
-                        ? "justify-content-end"
-                        : "justify-content-start"
-                      }`}
+                    className="p-3 border-bottom border-secondary"
+                    style={{ backgroundColor: "#1f1f1f" }}
                   >
-                    <div
-                      className={`px-3 py-2 rounded-3 shadow-sm 
-                        ${msg.sender === "me"
-                          ? "bg-primary text-white"
-                          : "bg-secondary text-white"
-                        }`}
-                    >
-                      <div>{msg.text}</div>
-
-                      <small className="d-block mt-1 opacity-75">
-                        {msg.name} • {msg.time}
-                      </small>
+                    <div className="fw-bold text-info">
+                      {loggedInUser.username} (Me)
                     </div>
+
+                    <small className="text-secondary">
+                      {loggedInUser.email}
+                    </small>
                   </div>
-                ))}
 
-                <div ref={messageEndRef}></div>
+                  {/* other users */}
+                  {users
+                    .filter((user) => user._id !== loggedInUser.id)
+                    .map((user) => (
+                      <div
+                        key={user._id}
+                        className="p-3 border-bottom border-secondary"
+                        style={{ cursor: "pointer" }}
+                      >
+                        <div className="fw-semibold text-light">
+                          {user.username}
+                        </div>
+
+                        <small className="text-secondary">
+                          {user.email}
+                        </small>
+                      </div>
+                    ))}
+                </div>
               </div>
-              {showScrollButton && (
-                <button
-                  className="btn btn-primary rounded-circle position-absolute"
-                  onClick={scrollToBottom}
-                  style={{
-                    bottom: "100px",
-                    right: "20px",
-                    width: "50px",
-                    height: "50px",
-                    zIndex: 1000
-                  }}
+
+              {/* right chat panel */}
+              <div className="flex-grow-1 d-flex flex-column position-relative">
+
+                {/* messages */}
+                <div
+                  ref={chatContainerRef}
+                  onScroll={handleScroll}
+                  className="flex-grow-1 overflow-auto p-3 chat-messages"
                 >
-                  ↓
-                </button>
-              )}
-            </div>
+                  <div className="d-flex flex-column gap-3">
+                    {messages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={`d-flex ${msg.sender === "me"
+                          ? "justify-content-end"
+                          : "justify-content-start"
+                          }`}
+                      >
+                        <div
+                          className={`px-3 py-2 rounded-3 shadow-sm ${msg.sender === "me"
+                            ? "bg-primary text-white"
+                            : "bg-secondary text-white"
+                            }`}
+                        >
+                          <div>{msg.text}</div>
 
+                          <small className="d-block mt-1 opacity-75">
+                            {msg.name} • {msg.time}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
 
-            {/* input */}
-            <div className="bg-black p-3 border-top border-secondary flex-shrink-0">
-              <div className="row g-2 align-items-center">
+                    <div ref={messageEndRef}></div>
+                  </div>
 
-                <div className="col-9 col-md-10">
-                  <input
-                    type="text"
-                    className="form-control bg-dark text-light border-secondary"
-                    placeholder="Type your message..."
-                    value={message}
-                    ref={inputRef}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        sendMessage()
-                      }
-                    }}
-                  />
+                  {showScrollButton && (
+                    <button
+                      className="btn btn-primary rounded-circle position-absolute"
+                      onClick={scrollToBottom}
+                      style={{
+                        bottom: "90px",
+                        right: "20px",
+                        width: "50px",
+                        height: "50px",
+                        zIndex: 1000
+                      }}
+                    >
+                      ↓
+                    </button>
+                  )}
                 </div>
-                <div className="col-3 col-md-2">
-                  <button type='submit' className="btn btn-primary w-100 fw-semibold"
-                    onClick={sendMessage}
-                  >
-                    Send
-                  </button>
+
+                {/* input INSIDE right panel */}
+                <div className="bg-black p-3 border-top border-secondary">
+                  <div className="row g-2 align-items-center">
+
+                    <div className="col-9">
+                      <input
+                        type="text"
+                        className="form-control bg-dark text-light border-secondary"
+                        placeholder="Type your message..."
+                        value={message}
+                        ref={inputRef}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            sendMessage()
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className="col-3">
+                      <button
+                        className="btn btn-primary w-100 fw-semibold"
+                        onClick={sendMessage}
+                      >
+                        Send
+                      </button>
+                    </div>
+
+                  </div>
                 </div>
+
               </div>
+
             </div>
 
           </div>
