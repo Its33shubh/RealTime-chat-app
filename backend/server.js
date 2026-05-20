@@ -6,6 +6,7 @@ const { Server} = require('socket.io')
 
 const connection = require('./config/db')
 const authRoutes = require('./routes/authRoutes')
+const messageRoutes = require('./routes/messageRoutes')
 
 
 let app = express()
@@ -54,6 +55,7 @@ app.get("/",(req,res)=>{
 })
 
 app.use('/api/auth',authRoutes)
+app.use('/api/message',messageRoutes)
 
 let PORT = process.env.PORT || 5000
 

@@ -67,35 +67,51 @@ function Chat() {
   }, [])
 
   // send message 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (message.trim() === "" || !selectedUser) return
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        text: message,
-        sender: "me",
-        name: "Me",
-        time: new Date().toLocaleTimeString()
-      }
-    ])
-
-    socket.emit("send_message", {
-      text: message,
+  
+    const messageData = {
       senderId: loggedInUser.id,
       receiverId: selectedUser._id,
+      text: message,
       senderName: loggedInUser.username,
       time: new Date().toLocaleTimeString()
-    })
-
-    setMessage("")
-    inputRef.current.focus()
-
-    setTimeout(() => {
-      messageEndRef.current?.scrollIntoView({
-        behavior: "smooth"
-      })
-    }, 100)
+    }
+  
+    try {
+      await axios.post(
+        "http://localhost:5000/api/message/save",
+        {
+          senderId: loggedInUser.id,
+          receiverId: selectedUser._id,
+          text: message
+        }
+      )
+  
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: message,
+          sender: "me",
+          name: "Me",
+          time: messageData.time
+        }
+      ])
+  
+      socket.emit("send_message", messageData)
+  
+      setMessage("")
+      inputRef.current.focus()
+  
+      setTimeout(() => {
+        messageEndRef.current?.scrollIntoView({
+          behavior: "smooth"
+        })
+      }, 100)
+  
+    } catch (error) {
+      console.log(error)
+    }
   }
   const handleScroll = () => {
     const chatBox = chatContainerRef.current//full messages container DOM element.
