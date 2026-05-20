@@ -6,12 +6,9 @@ function Login() {
         <>
             <div className="container-fluid vh-100 bg-dark text-light">
                 <div className="row h-100 justify-content-center align-items-center">
-
                     <div className="col-11 col-sm-8 col-md-6 col-lg-4">
-
                         <div className="card bg-black border border-secondary shadow-lg">
                             <div className="card-body p-4">
-
                                 <h2 className="text-center fw-bold mb-4" style={{color: "#F3C587" }}>
                                     Real Time Chat App
                                 </h2>
@@ -21,7 +18,7 @@ function Login() {
                                 </h4>
 
                                 <div className="mb-3">
-                                    <label className="form-label">
+                                    <label className="form-label" style={{color: "#FFFFFF" }}>
                                         Email
                                     </label>
                                     <input
@@ -31,7 +28,7 @@ function Login() {
                                     />
                                 </div>
 
-                                <div className="mb-4">
+                                <div className="mb-4" style={{color: "#FFFFFF" }}>
                                     <label className="form-label">
                                         Password
                                     </label>
@@ -46,7 +43,7 @@ function Login() {
                                     Login
                                 </button>
 
-                                <p className="text-center mt-4 mb-0">
+                                <p className="text-center mt-4 mb-0" style={{color: "#FFFFFF" }}>
                                     Don't have an account?{" "}
                                     <Link
                                         to="/register"
