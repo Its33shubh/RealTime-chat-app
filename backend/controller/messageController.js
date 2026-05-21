@@ -1,4 +1,5 @@
 const Message = require('../models/Message')
+const mongoose = require("mongoose")
 
 const saveMessage = async (req, res) => {
     try {
@@ -50,6 +51,18 @@ const getConversation = async (req, res) => {
             ]
         }).sort({ createdAt: 1 })
 
+        await Message.updateMany(
+            {
+                senderId: receiverId,
+                receiverId: senderId,
+                isRead: false
+            },
+            {
+                isRead: true
+            }
+        )
+        
+
         return res.status(200).json({
             error: false,
             success: true,
@@ -64,5 +77,38 @@ const getConversation = async (req, res) => {
         })
     }
 }
+const getUnreadCounts = async (req, res) => {
+    try {
+        const { userId } = req.params
 
-module.exports = { saveMessage,getConversation }
+        const unreadMessages = await Message.aggregate([
+            {
+                $match: {
+                    receiverId: new mongoose.Types.ObjectId(userId),
+                    isRead: false
+                }
+            },
+            {
+                $group: {
+                    _id: "$senderId",
+                    count: { $sum: 1 }
+                }
+            }
+        ])
+
+        return res.status(200).json({
+            error: false,
+            success: true,
+            unreadMessages
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            error: true,
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+module.exports = { saveMessage,getConversation,getUnreadCounts }
