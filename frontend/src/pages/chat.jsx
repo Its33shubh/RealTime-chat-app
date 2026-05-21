@@ -85,6 +85,30 @@ function Chat() {
     }
   }, [])
 
+  // fetch unread counts 
+  useEffect(() => {
+    const fetchUnreadCounts = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/message/unread/${loggedInUser.id}`)
+        //console.log(response)
+
+        const count = {}
+
+        response.data.unreadMessages.forEach((item) => {
+          count[item._id] = item.count
+        })
+        setUnreadCounts(count)
+
+      } catch (error) {
+        console.log(error);
+
+      }
+    }
+    if (loggedInUser?.id) {
+      fetchUnreadCounts()
+    }
+  }, [loggedInUser])
+
 
 
   // handle scroll event
@@ -163,6 +187,11 @@ function Chat() {
 
   const handleSelectUser = async (user) => {
     setSelectedUser(user)
+
+    setUnreadCounts((prev) => ({
+      ...prev,
+      [user._id]: 0
+    }))
 
     try {
       const response = await axios.get(
@@ -295,23 +324,31 @@ function Chat() {
                       backgroundColor: selectedUser?._id === user._id ? "#2a2a2a" : "transparent",
                     }}
                   >
-                    <div className="fw-semibold text-light">
-                      {user.username}
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div className="fw-semibold text-light">
+                        {user.username}
+                      </div>
+
                       {unreadCounts[user._id] > 0 && (
                         <span
                           className="badge rounded-pill"
                           style={{
                             backgroundColor: "#25D366",
                             color: "#000",
-                            minWidth: "28px"
+                            minWidth: "24px",
+                            fontSize: "12px"
                           }}
                         >
                           {unreadCounts[user._id]}
                         </span>
                       )}
                     </div>
-                    <small className="text-secondary">{user.email}</small>
+
+                    <small className="text-secondary">
+                      {user.email}
+                    </small>
                   </div>
+
                 ))}
             </div>
           </div>
